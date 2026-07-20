@@ -1,34 +1,48 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UsersService {
-  findAll() {
-    return [
-      {
-        success: true,
-        message: 'user baru berhasil dibuat',
-        id: 1,
-        name: 'budi',
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findAll() {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
       },
-      {
-        success: true,
-        message: 'user baru berhasil dibuat',
-        id: 2,
-        name: 'joko',
+      orderBy: {
+        id: 'asc',
       },
-    ];
+    });
   }
 
   findOne(id: number) {
-    return {
-      success: true,
-      message: 'user berhasil ditemukan',
-      data: [
-        {
-          id,
-          name: 'joko',
-        },  
-      ],
-    };
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async create(createUserDto: CreateUserDto) {
+    await this.prisma.user.create({
+      data: {
+        name: createUserDto.name,
+        email: createUserDto.email,
+        password: createUserDto.password,
+      },
+    });
   }
 }
