@@ -4,6 +4,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { NotFoundException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
 import * as bcrypt from 'bcrypt';
+import { UpdateUserDto } from './dto/update-user.dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -50,7 +51,7 @@ export class UsersService {
       return await this.prisma.user.create({
         data: {
           ...createUserDto,
-          password: hashedPassword
+          password: hashedPassword,
         },
       });
     } catch (error) {
@@ -64,5 +65,42 @@ export class UsersService {
       }
       throw error;
     }
+  }
+
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    await this.findOne(id);
+
+    const data = {
+      ...updateUserDto,
+    };
+
+    if (updateUserDto.password) {
+      data.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async remove(id: number) {
+    await this.findOne(id);
+
+    await this.prisma.user.delete({
+      where: {
+        id,
+      },
+    });
+    return 'user deleted successfully';
   }
 }
