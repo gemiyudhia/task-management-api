@@ -110,4 +110,12 @@ export class UsersService {
     });
     return 'user deleted successfully';
   }
+
+  async findByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+  }
 }
