@@ -53,6 +53,13 @@ export class UsersService {
           ...createUserDto,
           password: hashedPassword,
         },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       });
     } catch (error) {
       if (
