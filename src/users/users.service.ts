@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { NotFoundException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -43,9 +44,14 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto) {
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
     try {
       return await this.prisma.user.create({
-        data: createUserDto,
+        data: {
+          ...createUserDto,
+          password: hashedPassword
+        },
       });
     } catch (error) {
       if (
