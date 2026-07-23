@@ -34,6 +34,7 @@ export class UsersService {
         name: true,
         id: true,
         email: true,
+        role: true,
         createdAt: true,
         updatedAt: true,
       },

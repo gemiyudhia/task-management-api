@@ -42,10 +42,27 @@ export class AuthService {
     };
   }
 
-  private async generateAccessToken(user: User) {
+  async refresh(refreshToken: string) {
+    const payload = await this.jwtService.verifyAsync(refreshToken, {
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+    });
+
+    const user = await this.usersService.findOne(payload.sub);
+
+    if (!user) throw new UnauthorizedException();
+
+    const accessToken = await this.generateAccessToken(user);
+
+    return {
+      access_token: accessToken,
+    };
+  }
+
+  private async generateAccessToken(user: Omit<User, 'password'>) {
     const payload = {
       sub: user.id,
       email: user.email,
+      role: user.role,
     };
     return this.jwtService.signAsync(payload);
   }
