@@ -4,6 +4,7 @@ import { UsersService } from 'src/users/users.service';
 import { LoginDto } from './dto/login.dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { User } from 'generated/prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -29,12 +30,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    const accessToken = await this.generateAccessToken(user);
+    return {
+      access_token: accessToken,
+    };
+  }
+
+  private async generateAccessToken(user: User) {
     const payload = {
       sub: user.id,
       email: user.email,
     };
-
-    const accessToken = await this.jwtService.signAsync(payload);
-    return {};
+    return this.jwtService.signAsync(payload);
   }
 }
