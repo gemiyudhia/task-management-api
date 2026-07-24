@@ -79,6 +79,14 @@ export class AuthService {
     }
   }
 
+  async logout(userId: number) {
+    await this.usersService.updateRefreshToken(userId, null);
+
+    return {
+      message: 'logout successfully',
+    };
+  }
+
   private async generateAccessToken(user: Pick<User, 'id' | 'email' | 'role'>) {
     const payload = {
       sub: user.id,
