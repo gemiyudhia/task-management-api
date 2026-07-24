@@ -119,4 +119,23 @@ export class UsersService {
       },
     });
   }
+
+  async updateRefreshToken(userId: number, hashedRefreshToken: string | null) {
+    return this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        hashedRefreshToken,
+      },
+    });
+  }
+
+  async findOneForAuth(id: number) {
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
 }

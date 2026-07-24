@@ -36,6 +36,10 @@ export class AuthService {
 
     const refreshToken = await this.generateRefreshToken(user);
 
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+
+    await this.usersService.updateRefreshToken(user.id, hashedRefreshToken);
+
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -43,22 +47,39 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
-    const payload = await this.jwtService.verifyAsync(refreshToken, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-    });
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      });
 
-    const user = await this.usersService.findOne(payload.sub);
+      const user = await this.usersService.findOneForAuth(payload.sub);
+      if (!user) throw new UnauthorizedException();
 
-    if (!user) throw new UnauthorizedException();
+      const accessToken = await this.generateAccessToken(user);
+      const NewRefreshToken = await this.generateRefreshToken(user);
 
-    const accessToken = await this.generateAccessToken(user);
+      const hashedRefreshToken = await bcrypt.hash(NewRefreshToken, 10);
+      await this.usersService.updateRefreshToken(user.id, hashedRefreshToken);
 
-    return {
-      access_token: accessToken,
-    };
+      if (!user.hashedRefreshToken)
+        throw new UnauthorizedException('refresh token not found');
+
+      const isMatch = await bcrypt.compare(
+        refreshToken,
+        user.hashedRefreshToken,
+      );
+
+      if (!isMatch) throw new UnauthorizedException();
+      return {
+        access_token: accessToken,
+        refresh_token: NewRefreshToken,
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
   }
 
-  private async generateAccessToken(user: Omit<User, 'password'>) {
+  private async generateAccessToken(user: Pick<User, 'id' | 'email' | 'role'>) {
     const payload = {
       sub: user.id,
       email: user.email,
@@ -67,7 +88,9 @@ export class AuthService {
     return this.jwtService.signAsync(payload);
   }
 
-  private async generateRefreshToken(user: User) {
+  private async generateRefreshToken(
+    user: Pick<User, 'id' | 'email' | 'role'>,
+  ) {
     const payload = {
       sub: user.id,
       email: user.email,
